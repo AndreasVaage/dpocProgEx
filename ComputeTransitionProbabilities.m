@@ -1,4 +1,5 @@
-function P = ComputeTransitionProbabilities( stateSpace, controlSpace, mazeSize, walls, targetCell, holes, resetCell, p_f )
+function P = ComputeTransitionProbabilities( stateSpace, controlSpace,... 
+mazeSize, walls, targetCell, holes, resetCell, p_f )
 %COMPUTETRANSITIONPROBABILITIES Compute transition probabilities.
 % 	Compute the transition probabilities between all states in the state
 %   space for all attainable control inputs.
@@ -54,6 +55,114 @@ function P = ComputeTransitionProbabilities( stateSpace, controlSpace, mazeSize,
 %           applied.
 
 % put your code here
+    statesLiesNextToWallTable = ...
+    createOneStepWallTransitionTable(walls, mazeSize);
+    stateLiesOnAHole = false(mazeSize);
+    for hole = holes'
+        stateLiesOnAHole(hole) = true;
+    end
+    resetCellIdx = getStateIdx(resetCell);
+    
+    P = zeros(mazeSize(1)*mazeSize(2),mazeSize(1)*mazeSize(2),length(controlSpace));
+    size(P)
+    for startStateIdx = 1:length(stateSpace)
+        startState = stateSpace(startStateIdx);
+        for controlInputIdx = 1:length(controlSpace)
+            controlInput = controlSpace(controlInputIdx);
+            endState = startState + controlInput;
+            endStateIdx = getStateIdx(endState);
+            resetProb = 0;
+            if endStateIdx ~= 0 && blockedByWall(startState,controlInput) == 0
+                probOfReachingWantedState = 1-probOfFalling(startState,controlInput);
+                
+              
+                
+                for disturbance = [1 0; 1 1; 0 1; -1 1; -1 0; -1 -1; 0 -1; 1 -1; 0 0]'
+                    newEndState = endState + disturbance;
+                    newEndStateIdx = getStateIdx(newEndState);
+                    if newEndStateIdx ~= 0 && blockedByWall(endState,disturbance) == 0
+                        probOfFall = probOfFalling(endState,disturbance);
+                        P(startStateIdx,newEndStateIdx,controlInputIdx) = (1-probOfFall)/9;
+                        resetProb =+ (probOfFall)/9;
+                    elseif stateLiesOnAHole(endState)
+                        P(startStateIdx,endStateIdx,controlInputIdx) =+ p_f/9;
+                        resetProb =+ (1-p_f)/9;
+                    else
+                        P(startStateIdx,endStateIdx,controlInputIdx) =+ 1/9;
+                    end
+                end
+                
+                P(startStateIdx,endStateIdx,controlInputIdx) =... 
+                    P(startStateIdx,endStateIdx,controlInputIdx)*probOfReachingWantedState;
+                P(startStateIdx,resetCellIdx,controlInputIdx) =+ ...
+                    resetProb*(1-probOfReachingWantedState);
+            end
+        end
+    end
+    
+    
+    
+    function prob = probOfFalling(start,u)
+        prob = 0;
+        state = start;
+        number_of_steps = int(abs(u));
+        for i = 1:number_of_steps
+            state = state + u/number_of_steps;
+            if stateLiesOnAHole(state) == true
+                prob = prob + (1-prob)*p_f;
+            end
+        end
+    end
+    
+    function blocked = blockedByWall(start,u)
+        state = start;
+        number_of_steps = int(abs(u));
+        for i = 1:number_of_steps
+            state = state + u/number_of_steps;
+            if statesLiesNextToWallTable(getStateIdx(start),getStateIdx(state))
+                blocked = true;
+                return
+            end
+        end
+        blocked = false;
+    end
 
+    function blocked = createOneStepWallTransitionTable(walls, mazeSize)
+        % Create a MN x MN logical array where one-step-transitions through
+        % walls are true. Rest is false.
+        blocked = false(mazeSize(1)*mazeSize(2));
+        for k = 1:2:size(walls,1)
+            x1,y1 = walls(k); x2,y2 = walls(k+1);
+            if ((x1-x2) == 0) % Vertical wall
+                y = max(y1,y2);
+                for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
+                    oneSideOfWall = getStateIdx([x1,y+shift(1)]);
+                    otherSideOfWall = getStateIdx([x1+1,y+shift(2)]);
+                    if oneSideOfWall ~= 0 && otherSideOfWall ~= 0
+                        blocked(oneSideOfWall,otherSideOfWall) = true;
+                        blocked(otherSideOfWall,oneSideOfWall) = true;
+                    end
+                end
+            elseif ((y1 - y2) == 0) % Horisontal wall
+                x = max(x1,x2);
+                for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
+                    oneSideOfWall = getStateIdx([x+shift(1),y1]);
+                    otherSideOfWall = getStateIdx([x+shift(2),y1+1]);
+                    if oneSideOfWall ~= 0 && otherSideOfWall ~= 0
+                        blocked(oneSideOfWall,otherSideOfWall) = true;
+                        blocked(otherSideOfWall,oneSideOfWall) = true;
+                    end
+                end
+            end
+        end
+    end
+
+    function idx = getStateIdx(coordinate)
+        if coordinate > 0 && all(coordinate <= mazeSize)
+            idx = stateSpace(:,coordinate);
+        else
+            idx = 0;
+        end
+    end
 end
 
