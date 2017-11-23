@@ -58,68 +58,75 @@ function G = ComputeStageCosts( stateSpace, controlSpace, mazeSize, walls, targe
 %           G(i, l) represents the cost if we are in state i and apply
 %           control input l.
 
-
-
-% Get the TransitionProbabilities [must be implemented]
-% The entry P(i, j, l) represents the transition
-% probability from state i to state j if control input l is
-% applied.
-P = ComputeTransitionProbabilities( stateSpace, controlSpace, ...
-    mazeSize, walls, targetCell, holes, resetCell, p_f );
-
 % REMARKS
-% What to do about the infinite transition probabilities?
-% Always add 1 to the cost, as it is the time step cost
 % What to do if there is a hole on the restart square?
  % What to do if restart square is in disturbance's reach?
 
+% P(i, j, l) = P(transition from i to j if l applied)
+P = ComputeTransitionProbabilities( stateSpace, controlSpace, ...
+    mazeSize, walls, targetCell, holes, resetCell, p_f );
+
 MN = size(stateSpace,1); 
 L = size(controlSpace,1);
-G = zeros(MN,L); %or set to infinite intially?
+G = zeros(MN,L);
+zeroInputIdx = 1;
 
-for x_idx=1:MN
-   for u_idx=1:size(controlSpace,1)
-       x_orig = stateSpace(x_idx,:);
-       u = controlSpace(u_idx,:);
+for xIdx=1:MN
+   for uIdx=1:L
+       x = stateSpace(xIdx,:);
+       u = controlSpace(uIdx,:);
        
-       x_end_det_input = x_orig+u; % but won't necessarily end up here?
-               %handeled by transition probability?
+       xAfterU = x+u;
+       xAfterUIdx = getStateIdx(xAfterU);
        
-       %%%if P(x_orig,x_end_det_input,u) = 0:
-        %%%G(x_orig,u) = inf ???
-            %%%will there always be a probability of getting
-            %%%there during the deterministic part? (if no walls on way)
-               
-       P_stay_during_disturb = P(x_end_det_input,x_end_det_input,[0,0]);
-       P_no_fall_during_det_input = P(x_idx,x_end_det_input,u) ... % TODO not entirely sure about this one
-           - P_stay_during_disturb;
-       P_fall_during_det_input = 1-P_no_fall_during_det_input;
+       if P(xIdx) == 0
+           G(xIdx,uIdx) = Inf;
+           continue;
+       end
+       
+       P_ArriveAtXAfterUAlsoAfterW = P(xIdx,xAfterUIdx,uIdx);
+       P_StayDuringW = P(xAfterUIdx,xAfterUIdx,zeroInputIdx);
+       P_NoFallDuringU = P_ArriveAtXAfterUAlsoAfterW - P_StayDuringW; %unsure
 
-       P_fall_during_disturb = P(x_end_det_input,resetCell,[0,0]);
-       P_hit_wall_no_fall_during_disturb = P_stay_during_disturb - 1/9;
-       hole_at_end_state_det_input = true; % TODO is_hole(holes,end_state)
-       if hole_at_end_state_det_input
-           P_hit_wall_during_disturb = P_hit_wall_no_fall_during_disturb / ...
-               (1-p_f);
+       P_FallDuringW = P(xAfterUIdx,resetCell,zeroInputIdx);
+       
+       P_ZeroW = 1/9;
+       P_HitWallNoFall = P_StayDuringW - P_ZeroW;
+       P_NoFallWhenHole = 1-p_f;
+       if isStateOnHole(xAfterU,holes)
+           P_HitWall = P_HitWallNoFall/P_NoFallWhenHole;
        else
-           P_hit_wall_during_disturb = P_hit_wall_no_fall_during_disturb;
+           P_HitWall = P_HitWallNoFall;
        end
 
-       g_fall_during_det_input = c_r * P_fall_during_det_input;
-       g_fall_during_disturb = c_r * P_fall_during_disturb;
-       g_hit_wall_during_disturb = c_p * P_hit_wall_during_disturb;
-       g_time_step = 1;
+       gTimeStep = 1;
+       gFallDuringU = c_r * (1-P_NoFallDuringU);
+       gFallDuringW = c_r * P_FallDuringW;
+       gHitWall = c_p * P_HitWall;
        
-       g_total = g_time_step + g_fall_during_det_input + ...
-           g_fall_during_disturb + g_hit_wall_during_disturb;
-       G(x_idx,u_idx) = g_total;
-   end % input loop 
-end %state loop
+       gTotal = gTimeStep + gFallDuringU + gFallDuringW + gHitWall;
+       G(xIdx,uIdx) = gTotal;
+   end 
 end
 
-function is_hole = isHole(x)
-    %TODO, should be easy
+function xOnHole = isStateOnHole(x,holes)
+    xOnHole = ismember(x,holes,'rows');
 end
+
+function idx = getStateIdx(coordinate)
+    if coordinate > 0 && all(coordinate <= mazeSize)
+        idx = stateSpace(:,coordinate);
+    else
+        idx = 0;
+    end
+end
+
+
+end
+
+
+
+
 
 
 
