@@ -59,19 +59,18 @@ J = zeros(1,n_states);
 %J=J0; %uncomment if J0 given by user
 
 iter_no=1;
-tol = 0.00001;
+tol = 0.000000000001;
 delta = Inf;
 J_update = zeros(1,n_states);
 mu = zeros(1,n_states);
 disp('Running value iteration ...');
 
 % Actual value iteration
-while delta > tol
+while any(delta(:) > tol)
    for i=1:n_states
         P_i = squeeze(P(i,:,:)); %P_i(j,u)=P(i,j,u)
         [J_update(i),mu(i)] = min(G(i,:) + a*J*P_i);
-   end;
-   
+   end
    delta = abs(J_update-J);
    J=J_update;
    iter_no = iter_no + 1; 
@@ -84,8 +83,7 @@ disp('Value iteration complete!');
 disp('Result of value iteration:');
 disp('--------------------------');
 disp('iter_no ='); disp(iter_no);
-disp('J_opt_ind ='); disp(J_opt);
-disp('u_opt_ind= '); disp(u_opt_ind);
+
 
 end
 

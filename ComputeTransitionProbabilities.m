@@ -66,6 +66,10 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     P = zeros(mazeSize(1)*mazeSize(2),mazeSize(1)*mazeSize(2),length(controlSpace));
     for startStateIdx = 1:length(stateSpace)
         startState = stateSpace(startStateIdx,:);
+        if startState == targetCell
+            P(startStateIdx,startStateIdx,:) = 1;
+            continue
+        end
         for controlInputIdx = 1:length(controlSpace)
             controlInput = controlSpace(controlInputIdx,:);
             endState = startState + controlInput;
@@ -106,7 +110,7 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     for startStateIdx = 1:length(stateSpace)
         for controlInputIdx = 1:length(controlSpace) 
             s = sum(P(startStateIdx,:,controlInputIdx));
-            if (s < 0.99999 && s ~= 0) || s > 1.0001
+            if ((s < 0.99999 && s ~= 0) || s > 1.0001) %|| isequal(stateSpace(startStateIdx)',targetCell))
                 warning("Sum of probabilities is not equal 1");
                 PlotMazeDebugg( 1, mazeSize, walls, targetCell, holes, resetCell, P,stateSpace,controlSpace,startStateIdx,controlInputIdx);
                 w = waitforbuttonpress; 

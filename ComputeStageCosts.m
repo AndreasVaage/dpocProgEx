@@ -74,19 +74,24 @@ for xIdx=1:size(stateSpace,1)
        x = stateSpace(xIdx,:);
        u = controlSpace(uIdx,:);
        xAfterU = x+u;
-       xAfterUIdx = getStateIdx(xAfterU,mazeSize);
+       xAfterUIdx = getStateIdx(xAfterU);
        
-       if P(xIdx,xAfterUIdx,u) == 0
+       if all(x == targetCell) && all(u == [0,0])
+           G(xIdx,uIdx) = 0;
+           continue
+       end
+       
+       if xAfterUIdx <= 0 || P(xIdx,xAfterUIdx,uIdx) == 0
            G(xIdx,uIdx) = Inf;
            continue;
        end
+       
        
        P_ArriveAtXAfterUAlsoAfterW = P(xIdx,xAfterUIdx,uIdx);
        P_StayDuringW = P(xAfterUIdx,xAfterUIdx,zeroInputIdx);
        P_NoFallDuringU = P_ArriveAtXAfterUAlsoAfterW - P_StayDuringW; %unsure
 
-       P_FallDuringW = P(xAfterUIdx,resetCell,zeroInputIdx);
-       
+       P_FallDuringW = P(xAfterUIdx,getStateIdx(resetCell),zeroInputIdx);
        P_ZeroW = 1/9;
        P_HitWallNoFall = P_StayDuringW - P_ZeroW;
        if isStateOnHole(xAfterU,holes)
@@ -100,7 +105,7 @@ for xIdx=1:size(stateSpace,1)
        gFallDuringU = c_r * (1-P_NoFallDuringU);
        gFallDuringW = c_r * P_FallDuringW;
        gHitWall = c_p * P_HitWall;
-       
+
        G(xIdx,uIdx) = gTimeStep + gFallDuringU + gFallDuringW + gHitWall;
    end 
 end
