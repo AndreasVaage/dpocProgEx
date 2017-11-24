@@ -107,14 +107,6 @@ end
 
 end %end ComputeStageCost
 
-function idx = getStateIdx(coordinate)
-    if coordinate > 0 && all(coordinate <= mazeSize)
-        idx = stateSpace(:,coordinate);
-    else
-        idx = 0;
-    end
-end
-
 function xOnHole = isStateOnHole(x,holes)
     xOnHole = ismember(x,holes,'rows');
 end
