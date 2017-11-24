@@ -105,16 +105,17 @@ for xIdx=1:size(stateSpace,1)
    end 
 end
 
+function idx = getStateIdx(coordinate)
+        if all(coordinate > 0) && all(coordinate <= mazeSize)
+            idx = ( coordinate(1) - 1 ) * mazeSize( 2 ) + coordinate(2);
+        else
+            idx = 0;
+        end
+end
+
 end %end ComputeStageCost
 
 function xOnHole = isStateOnHole(x,holes)
     xOnHole = ismember(x,holes,'rows');
 end
 
-function idx = getStateIdx(x,mazeSize)
-    if all(x > 0) && all(x <= mazeSize)
-        idx = (x(1)-1)*mazeSize(2)+x(2);
-    else
-        idx = 0;
-    end
-end
