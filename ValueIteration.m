@@ -53,7 +53,7 @@ function [ J_opt, u_opt_ind ] = ValueIteration( P, G )
 n_states = size(G,1);
 n_inputs = size(G,2);
 
-a = 1;
+a = 1.0;
 %a = alpha; %uncomment if alpha given by user
 J = zeros(1,n_states); 
 %J=J0; %uncomment if J0 given by user
@@ -62,7 +62,7 @@ iter_no=1;
 tol = 0.00001;
 delta = Inf;
 J_update = zeros(1,n_states);
-mu = zeros(1,n_inputs);
+mu = zeros(1,n_states);
 disp('Running value iteration ...');
 
 % Actual value iteration
