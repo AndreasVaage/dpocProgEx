@@ -58,7 +58,64 @@ function G = ComputeStageCosts( stateSpace, controlSpace, mazeSize, walls, targe
 %           G(i, l) represents the cost if we are in state i and apply
 %           control input l.
 
-% put your code here
+% REMARKS
+% What to do if there is a hole on the restart square?
+ % What to do if restart square is in disturbance's reach?
 
+% P(i, j, l) = P(transition from i to j if l applied)
+P = ComputeTransitionProbabilities( stateSpace, controlSpace, ...
+    mazeSize, walls, targetCell, holes, resetCell, p_f );
+
+G = zeros(size(stateSpace,1),size(controlSpace,1));
+zeroInputIdx = 1;
+
+for xIdx=1:size(stateSpace,1)
+   for uIdx=1:size(controlSpace,1)
+       x = stateSpace(xIdx,:);
+       u = controlSpace(uIdx,:);
+       xAfterU = x+u;
+       xAfterUIdx = getStateIdx(xAfterU,mazeSize);
+       
+       if P(xIdx,xAfterUIdx,u) == 0
+           G(xIdx,uIdx) = Inf;
+           continue;
+       end
+       
+       P_ArriveAtXAfterUAlsoAfterW = P(xIdx,xAfterUIdx,uIdx);
+       P_StayDuringW = P(xAfterUIdx,xAfterUIdx,zeroInputIdx);
+       P_NoFallDuringU = P_ArriveAtXAfterUAlsoAfterW - P_StayDuringW; %unsure
+
+       P_FallDuringW = P(xAfterUIdx,resetCell,zeroInputIdx);
+       
+       P_ZeroW = 1/9;
+       P_HitWallNoFall = P_StayDuringW - P_ZeroW;
+       if isStateOnHole(xAfterU,holes)
+           P_NoFall = 1-p_f;
+       else
+           P_NoFall = 1;
+       end
+       P_HitWall = P_HitWallNoFall/P_NoFall;
+
+       gTimeStep = 1;
+       gFallDuringU = c_r * (1-P_NoFallDuringU);
+       gFallDuringW = c_r * P_FallDuringW;
+       gHitWall = c_p * P_HitWall;
+       
+       G(xIdx,uIdx) = gTimeStep + gFallDuringU + gFallDuringW + gHitWall;
+   end 
+end
+
+function idx = getStateIdx(coordinate)
+        if all(coordinate > 0) && all(coordinate <= mazeSize)
+            idx = ( coordinate(1) - 1 ) * mazeSize( 2 ) + coordinate(2);
+        else
+            idx = 0;
+        end
+end
+
+end %end ComputeStageCost
+
+function xOnHole = isStateOnHole(x,holes)
+    xOnHole = ismember(x,holes,'rows');
 end
 
