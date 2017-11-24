@@ -76,7 +76,7 @@ for xIdx=1:size(stateSpace,1)
        xAfterU = x+u;
        xAfterUIdx = getStateIdx(xAfterU,mazeSize);
        
-       if P(xIdx,xAfterUIdx,u) == 0 %unsure
+       if P(xIdx,xAfterUIdx,u) == 0
            G(xIdx,uIdx) = Inf;
            continue;
        end
@@ -112,7 +112,7 @@ function xOnHole = isStateOnHole(x,holes)
 end
 
 function idx = getStateIdx(x,mazeSize)
-    if x > 0 && x <= mazeSize
+    if all(x > 0) && all(x <= mazeSize)
         idx = (x(1)-1)*mazeSize(2)+x(2);
     else
         idx = 0;
