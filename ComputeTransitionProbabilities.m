@@ -64,11 +64,10 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     resetCellIdx = getStateIdx(resetCell);
     
     P = zeros(mazeSize(1)*mazeSize(2),mazeSize(1)*mazeSize(2),length(controlSpace));
-    size(P)
     for startStateIdx = 1:length(stateSpace)
-        startState = stateSpace(startStateIdx);
+        startState = stateSpace(startStateIdx,:);
         for controlInputIdx = 1:length(controlSpace)
-            controlInput = controlSpace(controlInputIdx);
+            controlInput = controlSpace(controlInputIdx,:);
             endState = startState + controlInput;
             endStateIdx = getStateIdx(endState);
             resetProb = 0;
@@ -78,10 +77,10 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
               
                 
                 for disturbance = [1 0; 1 1; 0 1; -1 1; -1 0; -1 -1; 0 -1; 1 -1; 0 0]'
-                    newEndState = endState + disturbance;
+                    newEndState = endState + disturbance';
                     newEndStateIdx = getStateIdx(newEndState);
-                    if newEndStateIdx ~= 0 && blockedByWall(endState,disturbance) == 0
-                        probOfFall = probOfFalling(endState,disturbance);
+                    if newEndStateIdx ~= 0 && blockedByWall(endState,disturbance') == 0
+                        probOfFall = probOfFalling(endState,disturbance');
                         P(startStateIdx,newEndStateIdx,controlInputIdx) = (1-probOfFall)/9;
                         resetProb =+ (probOfFall)/9;
                     elseif stateLiesOnAHole(endState)
@@ -105,7 +104,7 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     function prob = probOfFalling(start,u)
         prob = 0;
         state = start;
-        number_of_steps = int(abs(u));
+        number_of_steps = max(abs(u));
         for i = 1:number_of_steps
             state = state + u/number_of_steps;
             if stateLiesOnAHole(state) == true
@@ -116,7 +115,7 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     
     function blocked = blockedByWall(start,u)
         state = start;
-        number_of_steps = int(abs(u));
+        number_of_steps = max(abs(u));
         for i = 1:number_of_steps
             state = state + u/number_of_steps;
             if statesLiesNextToWallTable(getStateIdx(start),getStateIdx(state))
@@ -132,7 +131,8 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
         % walls are true. Rest is false.
         blocked = false(mazeSize(1)*mazeSize(2));
         for k = 1:2:size(walls,1)
-            x1,y1 = walls(k); x2,y2 = walls(k+1);
+            x1 = walls(k,1); y1 = walls(k,2);
+            x2 = walls(k+1,1); y2 = walls(k+1,2);
             if ((x1-x2) == 0) % Vertical wall
                 y = max(y1,y2);
                 for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
@@ -158,8 +158,8 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     end
 
     function idx = getStateIdx(coordinate)
-        if coordinate > 0 && all(coordinate <= mazeSize)
-            idx = stateSpace(:,coordinate);
+        if all(coordinate > 0) && all(coordinate <= mazeSize)
+            idx = ( coordinate(1) - 1 ) * mazeSize( 2 ) + coordinate(2);
         else
             idx = 0;
         end
