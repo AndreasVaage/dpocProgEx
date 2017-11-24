@@ -59,7 +59,7 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
     createOneStepWallTransitionTable(walls, mazeSize);
     stateLiesOnAHole = false(mazeSize);
     for hole = holes'
-        stateLiesOnAHole(hole) = true;
+        stateLiesOnAHole(hole(1),hole(2)) = true;
     end
     resetCellIdx = getStateIdx(resetCell);
     
@@ -74,51 +74,66 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
             if endStateIdx ~= 0 && blockedByWall(startState,controlInput) == 0
                 probOfReachingWantedState = 1-probOfFalling(startState,controlInput);
                 
-              
+                probOfStayingAfterDisturbance = 0;
                 
                 for disturbance = [1 0; 1 1; 0 1; -1 1; -1 0; -1 -1; 0 -1; 1 -1; 0 0]'
                     newEndState = endState + disturbance';
                     newEndStateIdx = getStateIdx(newEndState);
-                    if newEndStateIdx ~= 0 && blockedByWall(endState,disturbance') == 0
+                    if newEndStateIdx ~= 0 && blockedByWall(endState,disturbance') == 0 % No Wall
                         probOfFall = probOfFalling(endState,disturbance');
-                        P(startStateIdx,newEndStateIdx,controlInputIdx) = (1-probOfFall)/9;
-                        resetProb =+ (probOfFall)/9;
-                    elseif stateLiesOnAHole(endState)
-                        P(startStateIdx,endStateIdx,controlInputIdx) =+ p_f/9;
-                        resetProb =+ (1-p_f)/9;
-                    else
-                        P(startStateIdx,endStateIdx,controlInputIdx) =+ 1/9;
+                        P(startStateIdx,newEndStateIdx,controlInputIdx) = probOfReachingWantedState*(1-probOfFall)/9;
+                        resetProb = resetProb + probOfReachingWantedState * (probOfFall)/9;
+                    elseif stateLiesOnAHole(endState(1),endState(2)) % Wall, and wanted state is a hole
+                        probOfStayingAfterDisturbance = ...
+                            probOfStayingAfterDisturbance + (1-p_f)/9;
+                        resetProb = resetProb + probOfReachingWantedState * p_f/9;
+                    else % Wall, and wanted state is not a hole
+                        probOfStayingAfterDisturbance =...
+                            probOfStayingAfterDisturbance + 1/9;
                     end
                 end
                 
                 P(startStateIdx,endStateIdx,controlInputIdx) =... 
-                    P(startStateIdx,endStateIdx,controlInputIdx)*probOfReachingWantedState;
-                P(startStateIdx,resetCellIdx,controlInputIdx) =+ ...
-                    resetProb*(1-probOfReachingWantedState);
+                    probOfReachingWantedState * (probOfStayingAfterDisturbance + 1/9);
+                P(startStateIdx,resetCellIdx,controlInputIdx) = ...
+                P(startStateIdx,resetCellIdx,controlInputIdx) + ...
+                    resetProb + (1-probOfReachingWantedState);
             end
         end
     end
     
-    
-    
+    % Debug
+    for startStateIdx = 1:length(stateSpace)
+        for controlInputIdx = 1:length(controlSpace) 
+            s = sum(P(startStateIdx,:,controlInputIdx));
+            if (s < 0.99999 && s ~= 0) || s > 1.0001
+                warning("Sum of probabilities is not equal 1");
+                PlotMazeDebugg( 1, mazeSize, walls, targetCell, holes, resetCell, P,stateSpace,controlSpace,startStateIdx,controlInputIdx);
+                w = waitforbuttonpress; 
+                close all
+            end
+        end
+    end
+   
     function prob = probOfFalling(start,u)
         prob = 0;
         state = start;
         number_of_steps = max(abs(u));
         for i = 1:number_of_steps
             state = state + u/number_of_steps;
-            if stateLiesOnAHole(state) == true
+            if stateLiesOnAHole(state(1),state(2)) == true
                 prob = prob + (1-prob)*p_f;
             end
         end
     end
     
     function blocked = blockedByWall(start,u)
-        state = start;
+        newState = start;
         number_of_steps = max(abs(u));
         for i = 1:number_of_steps
-            state = state + u/number_of_steps;
-            if statesLiesNextToWallTable(getStateIdx(start),getStateIdx(state))
+            state = newState;
+            newState = state + u/number_of_steps;
+            if statesLiesNextToWallTable(getStateIdx(state),getStateIdx(newState))
                 blocked = true;
                 return
             end
