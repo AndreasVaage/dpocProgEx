@@ -30,60 +30,30 @@ function [ J_opt, u_opt_ind ] = ValueIteration( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
-% put your code here
-
-%Test first iteration against Exam 2015 Ex.3:
-% clear all; close all;
-% P = zeros(3,3,2);
-% P(:,:,1) = [0.2 0.4 0.4; 0.4 0.6 0; 0.4 0.6 0];
-% P(:,:,2) = [0.4 0.2 0.4; 0 0.6 0.4; 0.6 0.4 0];
-% G = [16 8; 10 8; 1 2];
-% alpha = 0.5;
-% J0 = [10,10,10];
-
-%Test against exercise 2.3 on problem set 2
-% clear all; close all;
-% G = [-4 -6; 5 3];
-% P = zeros(2,2,2);
-% P(:,:,1) = [0.8 0.2; 0.7 0.3];
-% P(:,:,2) = [0.5 0.5; 0.4 0.6];
-% alpha = 0.99;
-% J0 = [0,0];
-
-n_states = size(G,1);
-n_inputs = size(G,2);
-
-a = 1.0;
-%a = alpha; %uncomment if alpha given by user
-J = zeros(1,n_states); 
-%J=J0; %uncomment if J0 given by user
-
-iter_no=1;
-tol = 0.000000000001;
-delta = Inf;
+% Setting up needed variables
+n_states = size(G,1); 
 J_update = zeros(1,n_states);
 mu = zeros(1,n_states);
-disp('Running value iteration ...');
+delta = Inf;
 
-% Actual value iteration
-while any(delta(:) > tol)
+% Adjustable params
+a = 0.99;
+cost_to_go_change_tol = 0.000000001;
+J = zeros(1,n_states); % init cost guess (default: zero cost)
+
+disp('Running value iteration ...');
+while any(delta(:) > cost_to_go_change_tol)
    for i=1:n_states
-        P_i = squeeze(P(i,:,:)); %P_i(j,u)=P(i,j,u)
+        P_i = squeeze(P(i,:,:));
         [J_update(i),mu(i)] = min(G(i,:) + a*J*P_i);
    end
    delta = abs(J_update-J);
    J=J_update;
-   iter_no = iter_no + 1; 
 end
 
+disp('Value iteration complete!');
 J_opt = J;
 u_opt_ind = mu;
-
-disp('Value iteration complete!');
-disp('Result of value iteration:');
-disp('--------------------------');
-disp('iter_no ='); disp(iter_no);
-
 
 end
 
