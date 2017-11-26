@@ -74,7 +74,7 @@ for i=1:n_states
     [~,mu(i)] = min(G(i,:) + alpha*J_opt*P_i);
 end
 
-disp('Linear porgram complete!');
+disp('Linear program complete!');
 
 % Zero input in termination state
 % Cost 0 in termination state
