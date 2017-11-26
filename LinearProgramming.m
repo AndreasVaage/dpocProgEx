@@ -30,6 +30,20 @@ function [ J_opt, u_opt_ind ] = LinearProgramming( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
+zeroInputIdx = 1;
+targetIdx = -1;
+for i=1:size(G,1)
+       if P(i,i,zeroInputIdx) > 0.999999
+        targetIdx = i;
+       end
+end
+
+disp(targetIdx);
+
+P(targetIdx,:,:) = [];
+P(:,targetIdx,:) = [];
+G(targetIdx,:) = [];
+
 n_states = size(G,1);
 n_inputs = size(G,2);
 alpha=1.0;
@@ -41,8 +55,18 @@ for i=1:n_inputs
     M(n_states*(i-1)+1:n_states*i,:) = eye(n_states)-alpha*P(:,:,i);
     h(n_states*(i-1)+1:n_states*i) = G(:,i);
 end
-J_opt = linprog(f,M,h);
-% Need to find the actuation!:
-u_opt_ind = ones(1,n_states);
+
+% Remove infinite costs before running LP
+tf = h==Inf;
+h(tf) = [];
+M(tf,:) = [];
+
+J = linprog(f,M,h)';
+J_opt = [J(1:targetIdx-1), 0, J(targetIdx:end)];
+
+% TODO: replace next line with finding policy
+u_opt_ind = ones(1,n_states); %temporary ones
+
+u_opt_ind = [u_opt_ind(1:targetIdx-1), 1, u_opt_ind(targetIdx:end)];
 
 end
