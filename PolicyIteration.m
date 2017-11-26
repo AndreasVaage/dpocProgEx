@@ -30,7 +30,45 @@ function [ J_opt, u_opt_ind ] = PolicyIteration( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
-% put your code here
+% Setting up needed variables
+n_states = size(G,1);
+J = zeros(1,n_states);
+J_update = zeros(1,n_states);
+P_given_mu = zeros(n_states,n_states);
+g_given_mu = zeros(n_states,1);
+zeroInputIdx = 1;
+
+% Adjustable params
+a = 0.99;
+mu = zeros(1,n_states);
+mu(:) = zeroInputIdx; % init policy guess (default: zero input)
+
+disp('Running policy iteration ...');
+while true
+    % Policy evaluation
+    for i=1:n_states
+       P_given_mu(i,:) = P(i,:,mu(i));
+       g_given_mu(i) = G(i,mu(i)); 
+    end
+    J_updateT = (eye(n_states) - a*P_given_mu)\g_given_mu;
+    J_update = J_updateT';
+    
+    if isequal(J,J_update)
+        disp('Cost-to-go not changing.');
+        break;
+    end
+    J = J_update;
+    
+    % Policy improvement
+    for i=1:n_states
+        P_i = squeeze(P(i,:,:));
+        [~,mu(i)] = min(G(i,:) + a*J_update*P_i);
+    end
+end
+
+disp('Policy iteration complete!');
+J_opt = J;
+u_opt_ind = mu;
 
 end
 
