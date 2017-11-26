@@ -37,7 +37,7 @@ mu = zeros(1,n_states);
 delta = Inf;
 
 % Adjustable params
-a = 0.99;
+alpha = 1.0;
 cost_to_go_change_tol = 0.000000001;
 J = zeros(1,n_states); % init cost guess (default: zero cost)
 
@@ -45,7 +45,7 @@ disp('Running value iteration ...');
 while any(delta(:) > cost_to_go_change_tol)
    for i=1:n_states
         P_i = squeeze(P(i,:,:));
-        [J_update(i),mu(i)] = min(G(i,:) + a*J*P_i);
+        [J_update(i),mu(i)] = min(G(i,:) + alpha*J*P_i);
    end
    delta = abs(J_update-J);
    J=J_update;

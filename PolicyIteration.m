@@ -39,7 +39,7 @@ g_given_mu = zeros(n_states,1);
 zeroInputIdx = 1;
 
 % Adjustable params
-a = 0.99;
+alpha = 1.0;
 mu = zeros(1,n_states);
 mu(:) = zeroInputIdx; % init policy guess (default: zero input)
 
@@ -50,7 +50,7 @@ while true
        P_given_mu(i,:) = P(i,:,mu(i));
        g_given_mu(i) = G(i,mu(i)); 
     end
-    J_updateT = (eye(n_states) - a*P_given_mu)\g_given_mu;
+    J_updateT = (eye(n_states) - alpha*P_given_mu)\g_given_mu;
     J_update = J_updateT';
     
     if isequal(J,J_update)
@@ -62,7 +62,7 @@ while true
     % Policy improvement
     for i=1:n_states
         P_i = squeeze(P(i,:,:));
-        [~,mu(i)] = min(G(i,:) + a*J_update*P_i);
+        [~,mu(i)] = min(G(i,:) + alpha*J_update*P_i);
     end
 end
 
