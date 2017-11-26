@@ -30,26 +30,41 @@ function [ J_opt, u_opt_ind ] = PolicyIteration( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
+% Remove target state from P and G
+zeroInputIdx = 1;
+targetIdx = -1;
+for i=1:size(G,1)
+       if P(i,i,zeroInputIdx) > 0.999999
+        targetIdx = i;
+       end
+end
+
+P(targetIdx,:,:) = [];
+P(:,targetIdx,:) = [];
+G(targetIdx,:) = [];
+
 % Setting up needed variables
 n_states = size(G,1);
 J = zeros(1,n_states);
 J_update = zeros(1,n_states);
 P_given_mu = zeros(n_states,n_states);
 g_given_mu = zeros(n_states,1);
-zeroInputIdx = 1;
 
 % Adjustable params
 alpha = 1.0;
 mu = zeros(1,n_states);
 mu(:) = zeroInputIdx; % init policy guess (default: zero input)
+%mu = [3,10,3,10,3,2,6,2,9,12,4,14,8,16,6,8,12,4,6,3,2,6,5,14,4,12,12,5,14];
 
 disp('Running policy iteration ...');
+iter_no = 1;
 while true
     % Policy evaluation
     for i=1:n_states
        P_given_mu(i,:) = P(i,:,mu(i));
        g_given_mu(i) = G(i,mu(i)); 
     end
+
     J_updateT = (eye(n_states) - alpha*P_given_mu)\g_given_mu;
     J_update = J_updateT';
     
@@ -64,11 +79,15 @@ while true
         P_i = squeeze(P(i,:,:));
         [~,mu(i)] = min(G(i,:) + alpha*J_update*P_i);
     end
+    iter_no = iter_no+1;
 end
 
 disp('Policy iteration complete!');
-J_opt = J;
-u_opt_ind = mu;
+
+%Policy 0 in zero state
+%Cost 0 in zero state
+J_opt = [J(1:targetIdx-1), 0, J(targetIdx:end)];
+u_opt_ind = [mu(1:targetIdx-1), 1, mu(targetIdx:end)];
 
 end
 
