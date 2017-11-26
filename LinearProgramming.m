@@ -30,43 +30,55 @@ function [ J_opt, u_opt_ind ] = LinearProgramming( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
+% Remove termination (zero) state from P and G
 zeroInputIdx = 1;
 targetIdx = -1;
 for i=1:size(G,1)
-       if P(i,i,zeroInputIdx) > 0.999999
-        targetIdx = i;
-       end
+   if P(i,i,zeroInputIdx) > 0.999999
+    targetIdx = i;
+   end
 end
-
-disp(targetIdx);
-
 P(targetIdx,:,:) = [];
 P(:,targetIdx,:) = [];
 G(targetIdx,:) = [];
 
+% Set up needed variables
 n_states = size(G,1);
 n_inputs = size(G,2);
-alpha=1.0;
+mu = zeros(1,n_states);
 
+% Adjustable params
+alpha = 1.0;
+
+% Set up Linear program
 f = -ones(n_states,1);
-M = zeros(n_inputs*n_states,n_states);
-h = zeros(n_inputs*n_states,1);
+A = zeros(n_inputs*n_states,n_states);
+b = zeros(n_inputs*n_states,1);
 for i=1:n_inputs
-    M(n_states*(i-1)+1:n_states*i,:) = eye(n_states)-alpha*P(:,:,i);
-    h(n_states*(i-1)+1:n_states*i) = G(:,i);
+    A(n_states*(i-1)+1:n_states*i,:) = eye(n_states)-alpha*P(:,:,i);
+    b(n_states*(i-1)+1:n_states*i) = G(:,i);
 end
 
 % Remove infinite costs before running LP
-tf = h==Inf;
-h(tf) = [];
-M(tf,:) = [];
+tf = b==Inf;
+b(tf) = [];
+A(tf,:) = [];
 
-J = linprog(f,M,h)';
-J_opt = [J(1:targetIdx-1), 0, J(targetIdx:end)];
+disp('Running linear program ...');
+J_opt = linprog(f,A,b)';
 
-% TODO: replace next line with finding policy
-u_opt_ind = ones(1,n_states); %temporary ones
+% We know that we now have the optimal cost-to-go
+% One iteration of policy improvement gives the optimal policy
+for i=1:n_states
+    P_i = squeeze(P(i,:,:));
+    [~,mu(i)] = min(G(i,:) + alpha*J_opt*P_i);
+end
 
-u_opt_ind = [u_opt_ind(1:targetIdx-1), 1, u_opt_ind(targetIdx:end)];
+disp('Linear porgram complete!');
+
+% Zero input in termination state
+% Cost 0 in termination state
+J_opt = [J_opt(1:targetIdx-1), 0, J_opt(targetIdx:end)];
+u_opt_ind = [mu(1:targetIdx-1), zeroInputIdx, mu(targetIdx:end)];
 
 end
