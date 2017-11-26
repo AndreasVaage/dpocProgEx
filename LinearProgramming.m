@@ -30,7 +30,19 @@ function [ J_opt, u_opt_ind ] = LinearProgramming( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
-% put your code here
+n_states = size(G,1);
+n_inputs = size(G,2);
+alpha=1.0;
+
+f = -ones(n_states,1);
+M = zeros(n_inputs*n_states,n_states);
+h = zeros(n_inputs*n_states,1);
+for i=1:n_inputs
+    M(n_states*(i-1)+1:n_states*i,:) = eye(n_states)-alpha*P(:,:,i);
+    h(n_states*(i-1)+1:n_states*i) = G(:,i);
+end
+J_opt = linprog(f,M,h);
+% Need to find the actuation!:
+u_opt_ind = ones(1,n_states);
 
 end
-
