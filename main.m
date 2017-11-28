@@ -33,9 +33,9 @@ c_r = 2;
 % as additional penalty.
 
 %% define problem size and generate maze
-shouldGenerateMaze = false;
+shouldGenerateMaze = true;
 if shouldGenerateMaze
-	mazeSize = [ 6, 5 ]; % N, M
+	mazeSize = ceil(10*rand(1,2)) + 1 % N, M
 	[ walls, targetCell, holes, resetCell ] = GenerateMaze( mazeSize( 1 ), ...
         mazeSize( 2 ), true );
     % This generates a new random maze.
@@ -46,7 +46,7 @@ end
 PlotMaze( 1, mazeSize, walls, targetCell, holes, resetCell );
 
 %% generate control space
-controlSpace = [0 0];
+controlSpace = [0 0]; 
 u_hat = [1 0; 1 1; 0 1; -1 1; -1 0; -1 -1; 0 -1; 1 -1];
 for u_step = 1 : max_steps
     controlSpace = [controlSpace; u_hat*u_step];
@@ -114,6 +114,32 @@ figH = PlotMaze( 4, mazeSize, walls, targetCell, holes, resetCell, stateSpace, .
     controlSpace, J_opt_lp, u_opt_ind_lp );
 figure(figH);
 title(strcat('Linear programming (width=', num2str(mazeSize(1)), ', height=', num2str(mazeSize(2)), ')'));
+%% Debug
+C = 0.00000001;
+if any([immse(J_opt_lp,J_opt_pi),immse(J_opt_lp,J_opt_vi),immse(J_opt_vi,J_opt_pi)] > C)
+    warning('J_opt is not equal');
+    w = waitforbuttonpress;
+end
+if isinteger(u_opt_ind_lp) == false
+    warning('u_opt_lp not integer')
+end
+if isinteger(u_opt_ind_pi) == false
+    warning('u_opt_pi not integer')
+end
+if isinteger(u_opt_ind_vi) == false
+    warning('u_opt_vi not integer')
+end
+if isequal(u_opt_ind_lp,u_opt_ind_pi,u_opt_ind_vi) == false
+    warning('u_opt is not equal');
+    u_err_lp = find(u_opt_ind_vi ~= u_opt_ind_pi);
+    u_err_pi = find(u_opt_ind_lp ~= u_opt_ind_vi);
+    u_err_vi = find(u_opt_ind_lp ~= u_opt_ind_pi);
+    disp('Check cell:')
+    for u_err = unique([u_err_pi,u_err_vi,u_err_lp])
+        disp(stateSpace(u_err,:));
+    end
+end
+
 
 %% display that terminated
 disp('terminated');
