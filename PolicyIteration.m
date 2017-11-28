@@ -83,7 +83,7 @@ disp('Policy iteration complete!');
 % Zero input in termination state
 % Cost 0 in termination state
 J_opt = [J(1:targetIdx-1), 0, J(targetIdx:end)];
-u_opt_ind = [mu(1:targetIdx-1), zeroInputIdx, mu(targetIdx:end)];
+u_opt_ind = uint32([mu(1:targetIdx-1), zeroInputIdx, mu(targetIdx:end)]);
 
 end
 

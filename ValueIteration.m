@@ -53,7 +53,7 @@ end
 
 disp('Value iteration complete!');
 J_opt = J;
-u_opt_ind = mu;
+u_opt_ind = uint32(mu);
 
 end
 

@@ -79,6 +79,6 @@ disp('Linear program complete!');
 % Zero input in termination state
 % Cost 0 in termination state
 J_opt = [J_opt(1:targetIdx-1), 0, J_opt(targetIdx:end)];
-u_opt_ind = [mu(1:targetIdx-1), zeroInputIdx, mu(targetIdx:end)];
+u_opt_ind = uint32([mu(1:targetIdx-1), zeroInputIdx, mu(targetIdx:end)]);
 
 end
