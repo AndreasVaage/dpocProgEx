@@ -87,9 +87,9 @@ for xIdx=1:size(stateSpace,1)
        end
        
        
-       P_ArriveAtXAfterUAlsoAfterW = P(xIdx,xAfterUIdx,uIdx);
+       P_ArriveAtXAfterUandW = P(xIdx,xAfterUIdx,uIdx);
        P_StayDuringW = P(xAfterUIdx,xAfterUIdx,zeroInputIdx);
-       P_NoFallDuringU = P_ArriveAtXAfterUAlsoAfterW - P_StayDuringW; %unsure
+       P_ArriveAtXAfterU = P_ArriveAtXAfterUandW / P_StayDuringW;
 
        P_FallDuringW = P(xAfterUIdx,getStateIdx(resetCell),zeroInputIdx);
        P_ZeroW = 1/9;
@@ -102,13 +102,27 @@ for xIdx=1:size(stateSpace,1)
        P_HitWall = P_HitWallNoFall/P_NoFall;
 
        gTimeStep = 1;
-       gFallDuringU = c_r * (1-P_NoFallDuringU);
+       gFallDuringU = c_r * (1-P_ArriveAtXAfterU);
        gFallDuringW = c_r * P_FallDuringW;
        gHitWall = c_p * P_HitWall;
 
-       G(xIdx,uIdx) = gTimeStep + gFallDuringU + gFallDuringW + gHitWall;
+       G(xIdx,uIdx) = gTimeStep + gFallDuringU + P_ArriveAtXAfterU*(gFallDuringW + gHitWall);
    end 
 end
+
+% Debug
+% for startStateIdx = 1:length(stateSpace)
+%     for controlInputIdx = 1:length(controlSpace) 
+%         s = sum(P(startStateIdx,:,controlInputIdx));
+%         if true%((s < 0.99999 && s ~= 0) || s > 1.0001) %|| isequal(stateSpace(startStateIdx)',targetCell))
+%             %warning('Sum of probabilities is not equal 1');
+%             PlotMazeDebugg( 1, mazeSize, walls, targetCell, holes, resetCell, P,stateSpace,controlSpace,startStateIdx,controlInputIdx);
+%             disp(G(startStateIdx,controlInputIdx))
+%             w = waitforbuttonpress; 
+%             close all
+%         end
+%     end
+% end
 
 function idx = getStateIdx(coordinate)
         if all(coordinate > 0) && all(coordinate <= mazeSize)
@@ -121,6 +135,10 @@ end
 end %end ComputeStageCost
 
 function xOnHole = isStateOnHole(x,holes)
-    xOnHole = ismember(x,holes,'rows');
+    if isempty(holes)
+        xOnHole = false;
+    else
+        xOnHole = ismember(x,holes,'rows');
+    end
 end
 
