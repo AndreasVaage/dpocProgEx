@@ -144,24 +144,26 @@ function blocked = createStatesNextToWallsTable(walls, mazeSize)
         x1 = walls(k,1); y1 = walls(k,2);
         x2 = walls(k+1,1); y2 = walls(k+1,2);
         if ((x1-x2) == 0) % Vertical wall
-            y = max(y1,y2);
-            for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
-                oneSideOfWall = getStateIdx([x1,y+shift(1)],mazeSize);
-                otherSideOfWall = getStateIdx([x1+1,y+shift(2)],mazeSize);
-                % Assignes index 0 if out of bound
-                if oneSideOfWall ~= 0 && otherSideOfWall ~= 0 
-                    blocked(oneSideOfWall,otherSideOfWall) = true;
-                    blocked(otherSideOfWall,oneSideOfWall) = true;
+            for y = (min(y1,y2) + 1):max(y1,y2)
+                for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
+                    oneSideOfWall = getStateIdx([x1,y+shift(1)],mazeSize);
+                    otherSideOfWall = getStateIdx([x1+1,y+shift(2)],mazeSize);
+                    % Assignes index 0 if out of bound
+                    if oneSideOfWall ~= 0 && otherSideOfWall ~= 0 
+                        blocked(oneSideOfWall,otherSideOfWall) = true;
+                        blocked(otherSideOfWall,oneSideOfWall) = true;
+                    end
                 end
             end
         elseif ((y1 - y2) == 0) % Horisontal wall
-            x = max(x1,x2);
-            for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
-                oneSideOfWall = getStateIdx([x+shift(1),y1],mazeSize);
-                otherSideOfWall = getStateIdx([x+shift(2),y1+1],mazeSize);
-                if oneSideOfWall ~= 0 && otherSideOfWall ~= 0
-                    blocked(oneSideOfWall,otherSideOfWall) = true;
-                    blocked(otherSideOfWall,oneSideOfWall) = true;
+            for x = (min(x1,x2) + 1):max(x1,x2)
+                for shift = [0 1; 0 -1; 0 0; 1 0; -1 0]'
+                    oneSideOfWall = getStateIdx([x+shift(1),y1],mazeSize);
+                    otherSideOfWall = getStateIdx([x+shift(2),y1+1],mazeSize);
+                    if oneSideOfWall ~= 0 && otherSideOfWall ~= 0
+                        blocked(oneSideOfWall,otherSideOfWall) = true;
+                        blocked(otherSideOfWall,oneSideOfWall) = true;
+                    end
                 end
             end
         end
