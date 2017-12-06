@@ -86,7 +86,7 @@ function G = ComputeStageCosts( stateSpace, controlSpace, mazeSize, walls, targe
             P_hitWall = 0;
             for step_w = controlSpace(1:9,:)'
                 if not(blockedByWall(cell_j,step_w',statesNextToWallTable,mazeSize)) % No Wall
-                    P_fallDuringW = P_fallDuringW +  probOfFalling(cell_j,step_w',p_f,holes);
+                    P_fallDuringW = P_fallDuringW +  probOfFalling(cell_j,step_w',p_f,holes)/9;
                 elseif isStateOnHole(cell_j,holes) % Wall, and wanted state is a hole
                     P_hitWall = P_hitWall + 1/9;
                     P_fallDuringW = P_fallDuringW + p_f/9;
