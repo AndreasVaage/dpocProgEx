@@ -100,23 +100,6 @@ mazeSize, walls, targetCell, holes, resetCell, p_f )
             P(i,resetCellIdx,u) = P(i,resetCellIdx,u) + P_reset + (1-P_notFallDuringU);
         end
     end
-    
-    
-    % Debug:
-    % Plots the probabilities, pauses the program and gives a warning if the
-    % sum of probabilities for a given start state and input is not equal
-    % to 0 or 1.
-    for i = 1:length(stateSpace)
-        for u = 1:length(controlSpace) 
-            s = sum(P(i,:,u));
-            if ((s < 0.99999 && s ~= 0) || s > 1.0001) %|| isequal(stateSpace(startStateIdx)',targetCell))
-                warning('Sum of probabilities is not equal 1');
-                PlotMazeDebugg( 1, mazeSize, walls, targetCell, holes, resetCell, P,stateSpace,controlSpace,i,u);
-                waitforbuttonpress; 
-                close all
-            end
-        end
-    end
 end
 
 function blocked = blockedByWall(start,u,statesNextToWallTable,mazeSize)
