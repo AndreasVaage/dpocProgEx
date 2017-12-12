@@ -30,7 +30,30 @@ function [ J_opt, u_opt_ind ] = ValueIteration( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
-% put your code here
+% Setting up needed variables
+n_states = size(G,1); 
+J_update = zeros(1,n_states);
+mu = zeros(1,n_states);
+delta = Inf;
+
+% Adjustable params
+alpha = 1.0;
+cost_to_go_change_tol = 0.000000001;
+J = zeros(1,n_states); % init cost guess (default: zero cost)
+
+disp('Running value iteration ...');
+while any(delta(:) > cost_to_go_change_tol)
+   for i=1:n_states
+        P_i = squeeze(P(i,:,:));
+        [J_update(i),mu(i)] = min(G(i,:) + alpha*J*P_i);
+   end
+   delta = abs(J_update-J);
+   J=J_update;
+end
+
+disp('Value iteration complete!');
+J_opt = J;
+u_opt_ind = uint32(mu);
 
 end
 

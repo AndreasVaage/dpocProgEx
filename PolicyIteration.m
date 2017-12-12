@@ -30,7 +30,60 @@ function [ J_opt, u_opt_ind ] = PolicyIteration( P, G )
 %       	A (1 x MN) matrix containing the indices of the optimal control
 %       	inputs for each element of the state space.
 
-% put your code here
+% Remove termination (zero) state from P and G
+zeroInputIdx = 1;
+targetIdx = -1;
+for i=1:size(G,1)
+   if P(i,i,zeroInputIdx) > 0.999999
+    targetIdx = i;
+   end
+end
+P(targetIdx,:,:) = [];
+P(:,targetIdx,:) = [];
+G(targetIdx,:) = [];
+
+% Setting up needed variables
+n_states = size(G,1);
+J = zeros(1,n_states);
+J_update = zeros(1,n_states);
+P_given_mu = zeros(n_states,n_states);
+g_given_mu = zeros(n_states,1);
+
+% Adjustable params
+alpha = 1.0;
+mu = zeros(1,n_states);
+mu(:) = zeroInputIdx; % init policy guess (default: zero input)
+
+disp('Running policy iteration ...');
+while true
+    % Policy evaluation
+    for i=1:n_states
+       P_given_mu(i,:) = P(i,:,mu(i));
+       g_given_mu(i) = G(i,mu(i)); 
+    end
+
+    J_updateT = (eye(n_states) - alpha*P_given_mu)\g_given_mu;
+    J_update = J_updateT';
+    
+    if isequal(J,J_update)
+        disp('Cost-to-go not changing.');
+        break;
+    end
+    J = J_update;
+    
+    % Policy improvement
+    for i=1:n_states
+        P_i = squeeze(P(i,:,:));
+        [~,mu(i)] = min(G(i,:) + alpha*J_update*P_i);
+    end
+end
+
+disp('Policy iteration complete!');
+
+% Zero input in termination state
+% Cost 0 in termination state
+J_opt = [J(1:targetIdx-1), 0, J(targetIdx:end)];
+u_opt_ind = uint32([mu(1:targetIdx-1), zeroInputIdx, mu(targetIdx:end)]);
 
 end
 
